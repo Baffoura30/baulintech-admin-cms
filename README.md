@@ -1,3 +1,22 @@
+# Baulin Admin CMS
+
+This is the internal Operations & CRM dashboard for Baulin Technologies.
+
+## Platform Architecture
+
+This project is part of a dual-platform system linked by a **Shared Supabase Backend**.
+
+- **Main Site:** [baulin.co.uk](https://baulin.co.uk) (Marketing & Lead Gen)
+- **Admin CMS:** [cms.baulin.co.uk](https://cms.baulin.co.uk) (Internal CRM & Ops)
+
+### Integration & Data Flow
+Both applications connect to the same Supabase instance. This allows for:
+- **Instant CRM Alerts:** When a lead is submitted on the main site, it appears immediately in the Admin CMS.
+- **Unified Auth:** Security is managed via Supabase Auth across both platforms.
+- **Real-time Sync:** Updates to projects, tickets, or blog posts in this CMS are reflected instantly on the main website.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
