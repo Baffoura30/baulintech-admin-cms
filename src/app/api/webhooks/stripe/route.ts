@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-  apiVersion: '2026-02-25.clover', // Update to match SDK type
-});
+const stripe = process.env.STRIPE_SECRET_KEY 
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16' as any, // Standard stable version
+    })
+  : null;
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 export async function POST(req: Request) {
+  if (!stripe || !webhookSecret) {
+    console.error('Stripe environment variables are missing');
+    return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 });
+  }
   const body = await req.text();
   const signature = headers().get('stripe-signature') as string;
 
