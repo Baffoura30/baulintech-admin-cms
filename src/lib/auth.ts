@@ -15,30 +15,38 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Missing email or password");
         }
 
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+        const adminEmail = process.env.ADMIN_EMAIL?.trim();
+        const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH?.trim();
 
         if (!adminEmail || !adminPasswordHash) {
-          console.error("Missing ADMIN_EMAIL or ADMIN_PASSWORD_HASH in environment variables");
+          console.error("[Auth Debug] Missing environment variables");
           throw new Error("Server configuration error");
         }
 
-        if (credentials.email !== adminEmail) {
+        // Case-insensitive and trimmed email comparison
+        if (credentials.email.trim().toLowerCase() !== adminEmail.toLowerCase()) {
+          console.warn(`[Auth Debug] Email mismatch. Got: ${credentials.email.trim().toLowerCase()}, Expected: ${adminEmail.toLowerCase()}`);
           throw new Error("Invalid credentials");
         }
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, adminPasswordHash);
+        try {
+          const isPasswordValid = await bcrypt.compare(credentials.password, adminPasswordHash);
+          
+          if (!isPasswordValid) {
+            console.warn("[Auth Debug] Password comparison failed");
+            throw new Error("Invalid credentials");
+          }
 
-        if (!isPasswordValid) {
-          throw new Error("Invalid credentials");
+          return {
+            id: "admin-1",
+            email: adminEmail,
+            name: "Baulin Admin",
+            role: "owner"
+          };
+        } catch (error) {
+          console.error("[Auth Debug] Bcrypt error:", error);
+          throw new Error("Internal authentication error");
         }
-
-        return {
-          id: "admin-1",
-          email: adminEmail,
-          name: "Baulin Admin",
-          role: "owner"
-        };
       }
     })
   ],
