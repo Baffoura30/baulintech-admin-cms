@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { ArrowLeft, Save } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 type ClientFormInput = {
   businessName: string;
@@ -14,13 +16,33 @@ type ClientFormInput = {
 };
 
 export default function NewClientPage() {
+  const router = useRouter();
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<ClientFormInput>();
 
   const onSubmit = async (data: ClientFormInput) => {
-    // In the future this will POST to /api/clients
-    console.log("Saving client data:", data);
-    await new Promise(res => setTimeout(res, 1000));
-    // router.push("/clients");
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .insert([
+          {
+            business_name: data.businessName,
+            contact_name: data.contactName,
+            email: data.email,
+            phone: data.phone,
+            business_type: data.businessType,
+            tier: data.tier,
+            stage: "onboarding", // Default stage for new manual entries
+          },
+        ]);
+
+      if (error) throw error;
+      
+      router.push("/clients");
+      router.refresh();
+    } catch (err: any) {
+      console.error("Error saving client:", err);
+      alert("Failed to save client: " + err.message);
+    }
   };
 
   return (

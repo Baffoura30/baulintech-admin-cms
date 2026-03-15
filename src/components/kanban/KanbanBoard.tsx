@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   DndContext, 
   closestCorners,
@@ -8,20 +6,23 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent
+  DragEndEvent,
+  DragOverEvent
 } from "@dnd-kit/core";
 import { 
   SortableContext, 
-  horizontalListSortingStrategy, 
+  arrayMove,
   verticalListSortingStrategy 
 } from "@dnd-kit/sortable";
 import { SortableItem } from "./SortableItem";
+import { supabase } from "@/lib/supabase";
 
 export type ProjectTask = {
   id: string;
   title: string;
   client: string;
   priority: "low" | "medium" | "high";
+  pipeline_stage: string;
 };
 
 type ColumnProps = {
@@ -30,60 +31,129 @@ type ColumnProps = {
   tasks: ProjectTask[];
 };
 
-const INITIAL_COLUMNS: ColumnProps[] = [
-  {
-    id: "brief",
-    title: "Project Brief",
-    tasks: [{ id: "t1", title: "Website Redesign", client: "Acme Legal", priority: "high" }]
-  },
-  {
-    id: "design",
-    title: "Design & UX",
-    tasks: [{ id: "t2", title: "Logo Refresh", client: "Peak Consultants", priority: "medium" }]
-  },
-  {
-    id: "build",
-    title: "Development",
-    tasks: [{ id: "t3", title: "E-Commerce Integration", client: "Local Plumbers", priority: "high" }]
-  },
-  {
-    id: "review",
-    title: "Client Review",
-    tasks: []
-  },
-  {
-    id: "launch",
-    title: "Ready for Launch",
-    tasks: [{ id: "t4", title: "SEO Migration", client: "Summit Accountants", priority: "low" }]
-  }
+const STAGES = [
+  { id: "brief", title: "Project Brief" },
+  { id: "design", title: "Design & UX" },
+  { id: "build", title: "Development" },
+  { id: "review", title: "Client Review" },
+  { id: "launch", title: "Ready for Launch" }
 ];
 
 export default function KanbanBoard() {
-  const [columns, setColumns] = useState<ColumnProps[]>(INITIAL_COLUMNS);
+  const [columns, setColumns] = useState<ColumnProps[]>(
+    STAGES.map(stage => ({ ...stage, tasks: [] }))
+  );
+  const [loading, setLoading] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor)
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  async function fetchProjects() {
+    try {
+      // Joining with clients to get the business name
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, clients(business_name)");
+
+      if (error) throw error;
+
+      const newColumns = STAGES.map(stage => ({
+        ...stage,
+        tasks: (data || [])
+          .filter(p => p.pipeline_stage === stage.id)
+          .map(p => ({
+            id: p.id,
+            title: p.name,
+            client: p.clients?.business_name || "Unknown Client",
+            priority: p.priority as any,
+            pipeline_stage: p.pipeline_stage
+          }))
+      }));
+
+      setColumns(newColumns);
+    } catch (err) {
+      console.error("Error fetching projects:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
 
-    // For simplicity in this demo, we'll just log the drag end.
-    // A fully featured board involves moving tasks between columns arrays.
-    console.log(`Moved item ${active.id} over ${over.id}`);
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    // Find the columns
+    const activeColumn = columns.find(col => col.tasks.some(t => t.id === activeId));
+    const overColumn = columns.find(col => col.id === overId || col.tasks.some(t => t.id === overId));
+
+    if (!activeColumn || !overColumn || activeColumn === overColumn) return;
+
+    setColumns(prev => {
+      const activeTasks = [...activeColumn.tasks];
+      const overTasks = [...overColumn.tasks];
+      
+      const taskIndex = activeTasks.findIndex(t => t.id === activeId);
+      const [movedTask] = activeTasks.splice(taskIndex, 1);
+      
+      // Update task's internal stage (optional but helps keep state consistent)
+      movedTask.pipeline_stage = overColumn.id;
+      
+      overTasks.push(movedTask);
+
+      return prev.map(col => {
+        if (col.id === activeColumn.id) return { ...col, tasks: activeTasks };
+        if (col.id === overColumn.id) return { ...col, tasks: overTasks };
+        return col;
+      });
+    });
   };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+
+    // Find column where task ended up
+    const column = columns.find(col => col.tasks.some(t => t.id === activeId));
+    if (!column) return;
+
+    // Persist to Supabase
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .update({ pipeline_stage: column.id })
+        .eq("id", activeId);
+
+      if (error) throw error;
+    } catch (err) {
+      console.error("Error updating project stage:", err);
+      // Optional: Rollback state if server fails
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading pipeline...</div>;
 
   return (
     <DndContext 
       sensors={sensors}
       collisionDetection={closestCorners}
+      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="flex gap-4 overflow-x-auto pb-4 h-full items-start">
         {columns.map((column) => (
-          <div key={column.id} className="w-80 flex-shrink-0 flex flex-col bg-white/5 border border-white/10 rounded-xl h-full max-h-[calc(100vh-12rem)]">
+          <div key={column.id} id={column.id} className="w-80 flex-shrink-0 flex flex-col bg-white/5 border border-white/10 rounded-xl h-full max-h-[calc(100vh-12rem)]">
             <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/50 rounded-t-xl">
               <h3 className="font-semibold text-white">{column.title}</h3>
               <span className="text-xs font-medium text-gray-500 bg-white/5 px-2 py-1 rounded">

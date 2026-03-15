@@ -45,19 +45,26 @@ export default function DashboardHome() {
           supabase.from('projects').select('*', { count: 'exact', head: true }),
         ]);
 
+        // Fetch clients with monthly_rate for MRR
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('id, monthly_rate');
+
+        const mrr = (clientData || []).reduce((acc, curr) => acc + (Number(curr.monthly_rate) || 0), 0);
+
+        setKpis([
+          { label: "Active MRR", value: `£${mrr.toLocaleString()}`, change: "Live", icon: ArrowUpRight, trend: "up" },
+          { label: "Active Clients", value: clientsCount || 0, change: "Live", icon: Users, trend: "up" },
+          { label: "Pipeline Value", value: `£${(projectsCount || 0) * 500}`, change: "Est", icon: CreditCard, trend: "up" },
+          { label: "Open Tickets", value: ticketsCount || 0, change: "Live", icon: AlertCircle, trend: "down" },
+        ]);
+
         // Fetch Recent Activity
         const { data: logData } = await supabase
           .from('activity_log')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(5);
-
-        setKpis([
-          { label: "Active MRR", value: "£0", change: "None", icon: ArrowUpRight, trend: "up" },
-          { label: "Active Clients", value: clientsCount || 0, change: "Live", icon: Users, trend: "up" },
-          { label: "Pipeline Value", value: `£${(projectsCount || 0) * 500}`, change: "Est", icon: CreditCard, trend: "up" },
-          { label: "Open Tickets", value: ticketsCount || 0, change: "Live", icon: AlertCircle, trend: "down" },
-        ]);
 
         setActivities(logData || []);
       } catch (error) {

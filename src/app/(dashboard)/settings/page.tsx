@@ -8,7 +8,8 @@ import {
   Lock, 
   ShieldCheck,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  CreditCard
 } from "lucide-react";
 import { useState } from "react";
 
@@ -109,6 +110,29 @@ export default function SettingsPage() {
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Connected
                 </div>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 border border-indigo-500/20">
+                    <CreditCard className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium">Stripe Payments</h4>
+                    <p className="text-xs text-gray-500">Subscription billing and automated payments</p>
+                  </div>
+                </div>
+                {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? (
+                  <div className="flex items-center gap-2 text-green-400 bg-green-400/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-green-400/20">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Connected
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-400/20">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Disconnected
+                  </div>
+                )}
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md flex items-center justify-between opacity-60">

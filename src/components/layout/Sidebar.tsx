@@ -10,12 +10,14 @@ import {
   Receipt, 
   LifeBuoy, 
   BarChart, 
-  Settings 
+  Settings,
+  MessageSquare
 } from "lucide-react";
 import clsx from "clsx";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Leads", href: "/leads", icon: MessageSquare },
   { label: "Clients", href: "/clients", icon: Users },
   { label: "Pipeline", href: "/pipeline", icon: Trello },
   { label: "Subscriptions", href: "/subscriptions", icon: CreditCard },
