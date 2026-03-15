@@ -12,7 +12,6 @@ import {
   Clock,
   UserPlus
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import StatusPill from "@/components/ui/StatusPill";
 import clsx from "clsx";
@@ -161,7 +160,7 @@ export default function LeadsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-500">
-                      {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
+                      {new Date(lead.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">

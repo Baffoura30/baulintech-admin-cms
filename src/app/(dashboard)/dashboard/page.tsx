@@ -9,8 +9,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatDistanceToNow } from "date-fns";
-
 interface KpiItem {
   label: string;
   value: string | number;
@@ -137,7 +135,7 @@ export default function DashboardHome() {
                     <p className="text-sm text-white font-medium leading-tight">{log.action}</p>
                     <p className="text-xs text-gray-500 mt-1">{log.details}</p>
                     <p className="text-[10px] text-gray-600 mt-1 uppercase font-semibold">
-                      {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                      {new Date(log.created_at).toLocaleDateString()}
                     </p>
                   </div>
                 </div>

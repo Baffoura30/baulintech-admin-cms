@@ -3,7 +3,7 @@
 import { Receipt, FileText, Send, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { format } from "date-fns";
+
 
 interface Invoice {
   id: string;
@@ -86,7 +86,7 @@ export default function InvoicesPage() {
                   <tr key={inv.id} className="hover:bg-white/[0.02] group">
                     <td className="px-6 py-4 font-mono text-gray-400 group-hover:text-baulin-gold transition-colors">{inv.invoice_number}</td>
                     <td className="px-6 py-4 font-medium text-white">{inv.client_name}</td>
-                    <td className="px-6 py-4 text-gray-500">{format(new Date(inv.due_at), 'MMM dd, yyyy')}</td>
+                    <td className="px-6 py-4 text-gray-500">{new Date(inv.due_at).toLocaleDateString()}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${
                         inv.status === 'paid' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 

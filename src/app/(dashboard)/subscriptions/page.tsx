@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import { CreditCard, TrendingUp, RefreshCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";

@@ -4,7 +4,7 @@ import { LifeBuoy, CheckCircle2, AlertCircle, Clock, Loader2 } from "lucide-reac
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatDistanceToNow } from "date-fns";
+
 
 interface Ticket {
   id: string;
@@ -116,7 +116,7 @@ export default function TicketsPage() {
                       <span>•</span>
                       <Link href={`/clients/${ticket.client_id}`} className="hover:text-white transition-colors">{ticket.client_name || 'Individual Client'}</Link>
                       <span>•</span>
-                      <span>{formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}</span>
+                      <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>

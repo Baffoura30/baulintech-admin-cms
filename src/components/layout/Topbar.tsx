@@ -1,8 +1,9 @@
+"use client";
 import { signOut } from "next-auth/react";
 import { LogOut, Menu, Bell, X, CheckSquare, UserPlus, CreditCard } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatDistanceToNow } from "date-fns";
+
 
 export default function Topbar() {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -83,7 +84,7 @@ export default function Topbar() {
                           <span className="font-semibold">{n.entity_type}</span> {n.action.replace(/_/g, " ")}
                         </p>
                         <p className="text-[10px] text-gray-500 uppercase font-medium">
-                          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                          {new Date(n.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
