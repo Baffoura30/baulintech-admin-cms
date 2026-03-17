@@ -2,31 +2,34 @@
 
 import { LifeBuoy, CheckCircle2, AlertCircle, Clock, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-
+import { useToast } from "@/components/ui/Toast";
 
 interface Ticket {
   id: string;
-  client_name?: string;
   subject: string;
   status: string;
   priority: string;
+  category?: string;
   created_at: string;
-  client_id: string;
+  profile_id: string;
+  profiles?: { full_name: string; business_name: string };
 }
 
 export default function TicketsPage() {
   const [loading, setLoading] = useState(true);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [activeTab, setActiveTab] = useState("All Active");
   const [stats, setStats] = useState({ open: 0, urgent: 0, resolved: 0 });
+  const { showToast } = useToast();
 
   useEffect(() => {
     async function fetchTickets() {
       try {
         const { data, error } = await supabase
-          .from('tickets')
-          .select('*')
+          .from('support_tickets')
+          .select('*, profiles(full_name, business_name)')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -34,21 +37,29 @@ export default function TicketsPage() {
         const ticketData = data || [];
         setTickets(ticketData);
 
-        // Simple stat calculation from fetched data
         setStats({
           open: ticketData.filter(t => t.status === 'open').length,
           urgent: ticketData.filter(t => t.priority === 'high' || t.status === 'urgent').length,
           resolved: ticketData.filter(t => t.status === 'resolved').length
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching tickets:", error);
+        showToast("Failed to fetch tickets: " + error.message, "error");
       } finally {
         setLoading(false);
       }
     }
 
     fetchTickets();
-  }, []);
+  }, [showToast]);
+
+  const filteredTickets = useMemo(() => {
+    if (activeTab === "All Active") return tickets.filter(t => t.status !== 'resolved');
+    if (activeTab === "Design Edits") return tickets.filter(t => t.category?.toLowerCase().includes('design') && t.status !== 'resolved');
+    if (activeTab === "Tech Support") return tickets.filter(t => t.category?.toLowerCase().includes('tech') && t.status !== 'resolved');
+    if (activeTab === "Resolved") return tickets.filter(t => t.status === 'resolved');
+    return tickets;
+  }, [tickets, activeTab]);
 
   if (loading) {
     return (
@@ -59,8 +70,10 @@ export default function TicketsPage() {
     );
   }
 
+  const tabs = ["All Active", "Design Edits", "Tech Support", "Resolved"];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-white">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold font-display text-white">Support Tickets</h1>
@@ -92,17 +105,24 @@ export default function TicketsPage() {
         </div>
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-        <div className="p-4 border-b border-white/10 flex gap-4">
-          <button className="text-sm font-medium text-white pb-4 border-b-2 border-baulin-gold">All Active</button>
-          <button className="text-sm font-medium text-gray-500 pb-4 border-b-2 border-transparent">Design Edits</button>
-          <button className="text-sm font-medium text-gray-500 pb-4 border-b-2 border-transparent">Tech Support</button>
-          <button className="text-sm font-medium text-gray-500 pb-4 border-b-2 border-transparent">Resolved</button>
+      <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden backdrop-blur-sm">
+        <div className="p-4 border-b border-white/10 flex gap-4 overflow-x-auto scroller-hide">
+          {tabs.map(tab => (
+            <button 
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`text-sm font-medium pb-4 border-b-2 transition-all whitespace-nowrap ${
+                activeTab === tab ? 'text-baulin-gold border-baulin-gold' : 'text-gray-500 border-transparent hover:text-gray-300'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
         
         <div className="divide-y divide-white/5">
-          {tickets.length > 0 ? (
-            tickets.map((ticket) => (
+          {filteredTickets.length > 0 ? (
+            filteredTickets.map((ticket) => (
               <div key={ticket.id} className="p-4 sm:p-6 hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                 <div className="flex gap-4 items-start">
                   <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${
@@ -114,13 +134,16 @@ export default function TicketsPage() {
                     <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400">
                       <span className="font-mono text-gray-500 text-[10px] bg-white/5 px-1.5 py-0.5 rounded uppercase tracking-tighter">#{ticket.id.slice(0, 8)}</span>
                       <span>•</span>
-                      <Link href={`/clients/${ticket.client_id}`} className="hover:text-white transition-colors">{ticket.client_name || 'Individual Client'}</Link>
+                      <Link href={`/clients/${ticket.profile_id}`} className="hover:text-white transition-colors">{ticket.profiles?.business_name || ticket.profiles?.full_name || 'Individual Client'}</Link>
                       <span>•</span>
                       <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
-                <button className="text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg transition-all active:scale-95">
+                <button 
+                  onClick={() => showToast("Ticket visualization coming soon", "info")}
+                  className="text-sm font-medium text-white bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-lg transition-all active:scale-95"
+                >
                   View Details
                 </button>
               </div>
@@ -128,7 +151,7 @@ export default function TicketsPage() {
           ) : (
             <div className="py-24 text-center">
               <LifeBuoy className="w-12 h-12 text-gray-700 mx-auto mb-4" />
-              <p className="text-gray-500 text-sm">No support tickets found in the system.</p>
+              <p className="text-gray-500 text-sm">No tickets found for this category.</p>
             </div>
           )}
         </div>

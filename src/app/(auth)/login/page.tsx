@@ -102,6 +102,12 @@ export default function LoginPage() {
             </div>
           </div>
 
+          <div className="flex justify-end mt-1">
+            <a href="/reset-password" title="Go to password reset" className="text-xs text-baulin-gold hover:text-white transition-colors">
+              Forgot password?
+            </a>
+          </div>
+
           <button
             type="submit"
             disabled={loading}

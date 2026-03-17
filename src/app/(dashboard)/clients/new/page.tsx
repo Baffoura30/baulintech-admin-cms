@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/Toast";
 
 type ClientFormInput = {
   businessName: string;
@@ -17,31 +18,52 @@ type ClientFormInput = {
 
 export default function NewClientPage() {
   const router = useRouter();
-  const { register, handleSubmit, formState: { isSubmitting } } = useForm<ClientFormInput>();
+  const { showToast } = useToast();
+  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<ClientFormInput>();
 
   const onSubmit = async (data: ClientFormInput) => {
     try {
-      const { error } = await supabase
-        .from("clients")
+      // Insert into profiles table
+      const { data: newProfile, error } = await supabase
+        .from("profiles")
         .insert([
           {
+            full_name: data.contactName,
             business_name: data.businessName,
-            contact_name: data.contactName,
             email: data.email,
             phone: data.phone,
-            business_type: data.businessType,
-            tier: data.tier,
-            stage: "onboarding", // Default stage for new manual entries
+            role: "client",
           },
-        ]);
+        ])
+        .select('id')
+        .single();
 
       if (error) throw error;
-      
+
+      // Create subscription record if tier selected
+      if (data.tier && newProfile?.id) {
+        const tierAmounts: Record<string, number> = { Presence: 99, Authority: 199, Prestige: 349 };
+        await supabase.from("client_subscriptions").insert([{
+          profile_id: newProfile.id,
+          tier: data.tier,
+          monthly_amount: tierAmounts[data.tier] || 0,
+          status: "onboarding",
+        }]);
+      }
+
+      await supabase.from("activity_log").insert([{
+        entity_type: "Client",
+        action: "manually_added",
+        details: { business: data.businessName, contact: data.contactName }
+      }]);
+
+      showToast(`Successfully added client: ${data.businessName}`, "success");
+      reset();
       router.push("/clients");
       router.refresh();
     } catch (err: any) {
       console.error("Error saving client:", err);
-      alert("Failed to save client: " + err.message);
+      showToast("Failed to save client: " + err.message, "error");
     }
   };
 

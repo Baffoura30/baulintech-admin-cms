@@ -18,14 +18,16 @@ export const authOptions: NextAuthOptions = {
         const adminEmail = process.env.ADMIN_EMAIL?.trim();
         const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH?.trim();
 
+        console.log(`[Auth Debug] Attempt Email: "${credentials.email}"`);
+        console.log(`[Auth Debug] Expected Email: "${adminEmail}"`);
+        
         if (!adminEmail || !adminPasswordHash) {
           console.error("[Auth Debug] Missing environment variables");
           throw new Error("Server configuration error");
         }
 
-        // Case-insensitive and trimmed email comparison
         if (credentials.email.trim().toLowerCase() !== adminEmail.toLowerCase()) {
-          console.warn(`[Auth Debug] Email mismatch. Got: ${credentials.email.trim().toLowerCase()}, Expected: ${adminEmail.toLowerCase()}`);
+          console.warn(`[Auth Debug] Email mismatch: "${credentials.email.trim().toLowerCase()}" vs "${adminEmail.toLowerCase()}"`);
           throw new Error("Invalid credentials");
         }
 

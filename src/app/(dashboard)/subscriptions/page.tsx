@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { CreditCard, TrendingUp, RefreshCcw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/Toast";
 
 export default function SubscriptionsPage() {
   const [stats, setStats] = useState({
@@ -19,14 +20,16 @@ export default function SubscriptionsPage() {
   async function fetchStats() {
     try {
       const { data, error } = await supabase
-        .from("clients")
-        .select("monthly_rate, stage");
+        .from("client_subscriptions")
+        .select("monthly_amount, status");
 
       if (error) throw error;
 
-      const mrr = (data || []).reduce((acc, curr) => acc + (Number(curr.monthly_rate) || 0), 0);
-      const active = (data || []).filter(c => c.stage === "active").length;
-      const pastDue = (data || []).filter(c => c.stage === "at_risk").length;
+      const mrr = (data || [])
+        .filter(s => s.status === 'active')
+        .reduce((acc, curr) => acc + (Number(curr.monthly_amount) || 0), 0);
+      const active = (data || []).filter(s => s.status === "active").length;
+      const pastDue = (data || []).filter(s => s.status === "past_due").length;
 
       setStats({ mrr, active, pastDue });
     } catch (err) {
@@ -36,6 +39,8 @@ export default function SubscriptionsPage() {
     }
   }
 
+  const { showToast } = useToast();
+
   async function handleSync() {
     setSyncing(true);
     try {
@@ -43,7 +48,9 @@ export default function SubscriptionsPage() {
       // For this demo, we'll simulate a fetch delay and then refresh our local DB view
       await new Promise(res => setTimeout(res, 1500));
       await fetchStats();
-      alert("Subscription data synced with Stripe successfully.");
+      showToast("Subscription data synced with Stripe successfully.", "success");
+    } catch (error: any) {
+      showToast("Failed to sync with Stripe: " + error.message, "error");
     } finally {
       setSyncing(false);
     }

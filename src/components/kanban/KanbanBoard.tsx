@@ -23,7 +23,7 @@ export type ProjectTask = {
   title: string;
   client: string;
   priority: "low" | "medium" | "high";
-  pipeline_stage: string;
+  stage: string;
 };
 
 type ColumnProps = {
@@ -37,7 +37,10 @@ const STAGES = [
   { id: "design", title: "Design & UX" },
   { id: "build", title: "Development" },
   { id: "review", title: "Client Review" },
-  { id: "launch", title: "Ready for Launch" }
+  { id: "revisions", title: "Revisions" },
+  { id: "pre_launch", title: "Pre-Launch" },
+  { id: "live", title: "Live" },
+  { id: "maintenance", title: "Maintenance" }
 ];
 
 export default function KanbanBoard() {
@@ -57,23 +60,22 @@ export default function KanbanBoard() {
 
   async function fetchProjects() {
     try {
-      // Joining with clients to get the business name
       const { data, error } = await supabase
-        .from("projects")
-        .select("*, clients(business_name)");
+        .from("client_projects")
+        .select("*, profiles(full_name, business_name)");
 
       if (error) throw error;
 
       const newColumns = STAGES.map(stage => ({
         ...stage,
         tasks: (data || [])
-          .filter(p => p.pipeline_stage === stage.id)
+          .filter(p => p.status === stage.id)
           .map(p => ({
             id: p.id,
             title: p.name,
-            client: p.clients?.business_name || "Unknown Client",
-            priority: p.priority as any,
-            pipeline_stage: p.pipeline_stage
+            client: p.profiles?.business_name || p.profiles?.full_name || "Unknown Client",
+            priority: (p.tier || "normal") as any,
+            stage: p.status
           }))
       }));
 
@@ -106,7 +108,7 @@ export default function KanbanBoard() {
       const [movedTask] = activeTasks.splice(taskIndex, 1);
       
       // Update task's internal stage (optional but helps keep state consistent)
-      movedTask.pipeline_stage = overColumn.id;
+      movedTask.stage = overColumn.id;
       
       overTasks.push(movedTask);
 
@@ -132,11 +134,18 @@ export default function KanbanBoard() {
     // Persist to Supabase
     try {
       const { error } = await supabase
-        .from("projects")
-        .update({ pipeline_stage: column.id })
+        .from("client_projects")
+        .update({ status: column.id })
         .eq("id", activeId);
 
       if (error) throw error;
+
+      // Log activity
+      await supabase.from("activity_log").insert([{
+        entity_type: "Project",
+        action: `moved_to_${column.id}`,
+        details: { project_id: activeId, stage: column.title }
+      }]);
     } catch (err) {
       console.error("Error updating project stage:", err);
       // Optional: Rollback state if server fails

@@ -145,9 +145,12 @@ export default function SettingsPage() {
                     <p className="text-xs text-gray-500">Automated invoice sync with Baulin's books</p>
                   </div>
                 </div>
-                <button className="text-[10px] text-baulin-gold border border-baulin-gold/20 hover:bg-baulin-gold/5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors">
+                <a 
+                  href="/api/xero/auth"
+                  className="text-[10px] text-baulin-gold border border-baulin-gold/20 hover:bg-baulin-gold/5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors inline-block"
+                >
                   Link Account
-                </button>
+                </a>
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-md flex items-center justify-between">

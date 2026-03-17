@@ -25,6 +25,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# debug/test scripts (may contain secrets)
+check-*.js
+debug-*.json
+debug-*.js
+init-db-check.js
+test-*.js
+
 # local env files
 .env*.local
 
