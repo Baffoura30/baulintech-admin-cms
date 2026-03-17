@@ -1,55 +1,108 @@
 # Baulin Admin CMS
 
-This is the internal Operations & CRM dashboard for Baulin Technologies.
+Internal Operations & CRM dashboard for Baulin Technologies.
 
-## Platform Architecture
-
-This project is part of a dual-platform system linked by a **Shared Supabase Backend**.
-
-- **Main Site:** [baulin.co.uk](https://baulin.co.uk) (Marketing & Lead Gen)
-- **Admin CMS:** [cms.baulin.co.uk](https://cms.baulin.co.uk) (Internal CRM & Ops)
-
-### Integration & Data Flow
-Both applications connect to the same Supabase instance. This allows for:
-- **Instant CRM Alerts:** When a lead is submitted on the main site, it appears immediately in the Admin CMS.
-- **Unified Auth:** Security is managed via Supabase Auth across both platforms.
-- **Real-time Sync:** Updates to projects, tickets, or blog posts in this CMS are reflected instantly on the main website.
+**Live URL:** [cms.baulin.co.uk](https://cms.baulin.co.uk)
+**GitHub:** [Baffoura30/baulintech-admin-cms](https://github.com/Baffoura30/baulintech-admin-cms)
 
 ---
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Platform Architecture
+
+This is one of two repositories that together form the full Baulin Technologies platform. Both repos share a single Supabase instance.
+
+| Repo | Purpose | URL |
+|------|---------|-----|
+| **`baulintech`** | Marketing site, client dashboard, public blog/portfolio | [baulin.co.uk](https://baulin.co.uk) |
+| **This repo** — `baulintech-admin-cms` | Internal CRM, content management, ops dashboard | [cms.baulin.co.uk](https://cms.baulin.co.uk) |
+
+### How they connect
+
+- **Contact form leads** → submitted via main site → appear instantly in Admin CMS (`contact_submissions` table)
+- **Blog, FAQ, Portfolio, Pricing, Testimonials** → managed here → read by main site via Supabase
+- **Client projects & milestones** → managed here → visible in client dashboard (`/dashboard` on main site)
+- **Support tickets** → created by clients on main site → managed here
+
+### Auth differences
+
+| Repo | Auth method |
+|------|------------|
+| `baulintech` | Supabase Auth (email/password + Google OAuth) |
+| **This repo** | NextAuth.js with hardcoded admin session (`id: "admin-1"`) + Supabase service role key |
+
+---
+
+## Tech Stack
+
+- **Framework:** Next.js 14 App Router
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **Database:** Supabase (PostgreSQL, accessed via service role key — bypasses RLS)
+- **Auth:** NextAuth.js (not Supabase Auth)
+- **Payments:** Stripe
+- **Email:** Resend
+- **Accounting:** Xero integration
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create `.env.local` with the following:
 
-## Learn More
+```env
+# NextAuth
+NEXTAUTH_URL=https://cms.baulin.co.uk
+NEXTAUTH_SECRET=
 
-To learn more about Next.js, take a look at the following resources:
+# Supabase (shared with main site — use service role key)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Resend
+RESEND_API_KEY=
+CONTACT_EMAIL=hello@baulin.co.uk
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 
-## Deploy on Vercel
+# Xero (accounting integration)
+XERO_CLIENT_ID=
+XERO_CLIENT_SECRET=
+XERO_REDIRECT_URI=https://cms.baulin.co.uk/api/xero/callback
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Email server (SMTP/IMAP for mirrored email)
+EMAIL_SMTP_HOST=
+EMAIL_SMTP_PORT=
+EMAIL_IMAP_HOST=
+EMAIL_IMAP_PORT=
+EMAIL_USER=
+EMAIL_PASS=
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Admin credentials
+ADMIN_EMAIL=
+ADMIN_PASSWORD_HASH=
+
+# Admin profile UUID (from profiles table — used as sender_id for messages)
+# SQL to get: SELECT id FROM profiles WHERE role = 'admin' LIMIT 1;
+ADMIN_PROFILE_ID=
+
+# GA4
+GA4_PROPERTY_ID=
+```
+
+---
+
+## Related Repo
+
+Main site: [github.com/Baffoura30/baulintech](https://github.com/Baffoura30/baulintech)
